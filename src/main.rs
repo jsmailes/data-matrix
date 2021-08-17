@@ -100,19 +100,6 @@ fn main() -> io::Result<()> {
 
     let mut lines: Vec<Line> = Vec::new();
 
-    lines.push(Line {
-        text: String::from("500"),
-        trails: vec![8, 4, 10],
-        x: 15,
-        y: 10,
-    });
-    lines.push(Line {
-        text: String::from("ba"),
-        trails: vec![12, 11],
-        x: 25,
-        y: 0,
-    });
-
     let width: u32;
     let height: u32;
 
@@ -134,8 +121,6 @@ fn main() -> io::Result<()> {
 
     const FPS: u32 = 15;
     let mut engine = ConsoleEngine::init(width, height, FPS).unwrap();
-
-    lines = add_line(lines, String::from("big chongus"), width, 16, &mut rng);
 
     let (tx_stdin, rx_stdin): (Sender<String>, Receiver<String>) = mpsc::channel();
 
