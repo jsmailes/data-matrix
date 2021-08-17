@@ -169,7 +169,7 @@ fn main() -> io::Result<()> {
         draw(&lines_bg, &trails, &mut engine, Color::Grey, Color::Grey);
         draw(&lines, &trails, &mut engine, Color::White, Color::Green);
 
-        if engine.is_key_pressed(KeyCode::Char('q')) || engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
+        if engine.is_key_pressed(KeyCode::Esc) || engine.is_key_pressed(KeyCode::Char('q')) || engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
             break;
         }
 
