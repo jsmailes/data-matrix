@@ -1,6 +1,6 @@
 use terminal_size::{Width, Height, terminal_size};
 
-use console_engine::{ConsoleEngine, pixel, Color, KeyCode};
+use console_engine::{ConsoleEngine, Color, KeyCode};
 
 struct Line {
     text: String,
@@ -15,12 +15,9 @@ fn update(height: u32, mut lines: Vec<Line>) -> Vec<Line> {
     }
 
     // remove all elements which have fully moved beyond the bottom of the screen
-    /*let drained: Vec<Line> = lines
-        .drain(..)
-        .filter(|line| {
-            !line.trails.iter().any(|trail| i64::from(line.y) - (trail.len() as i64) < i64::from(height) )
-        })
-        .collect();*/
+    lines.retain(|line| {
+        !line.trails.iter().all(|trail| i64::from(line.y) - (trail.len() as i64) > i64::from(height) )
+    });
 
     lines
 }
@@ -28,7 +25,13 @@ fn update(height: u32, mut lines: Vec<Line>) -> Vec<Line> {
 fn draw(lines: &Vec<Line>, engine: &mut ConsoleEngine){
     for line in lines {
         let text = &line.text[..];
-        engine.print_fbg(line.x as i32, line.y as i32, text, Color::Green, Color::Reset);
+        engine.print_fbg(line.x as i32, line.y as i32, text, Color::White, Color::Reset);
+
+        for (i, trail) in line.trails.iter().enumerate() {
+            for j in 0..trail.len() {
+                engine.print_fbg(line.x as i32 + i as i32, line.y as i32 - j as i32 - 1, &trail[j..j+1], Color::Green, Color::Reset);
+            }
+        }
     }
 }
 
@@ -44,6 +47,15 @@ fn main() {
         ],
         x: 15,
         y: 10,
+    });
+    lines.push(Line {
+        text: String::from("ba"),
+        trails: vec![
+            String::from("eoujwenwe,sd"),
+            String::from("iwearlasdf."),
+        ],
+        x: 25,
+        y: 0,
     });
 
     let width: u32;
