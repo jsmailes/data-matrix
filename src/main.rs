@@ -6,6 +6,12 @@ use rand::Rng;
 use rand::prelude::ThreadRng;
 use rand::distributions::{Distribution, Uniform};
 
+use std::io;
+use std::thread;
+use std::sync::mpsc::{self, Sender, Receiver};
+use std::time::Duration;
+
+
 struct Line {
     text: String,
     trails: Vec<u32>,
@@ -45,9 +51,9 @@ fn update_trails(mut trails: Vec<Vec<char>>, chance: f64, rng: &mut ThreadRng, c
 fn add_line(mut lines: Vec<Line>, text: String, width: u32, trail_length: u32, rng: &mut ThreadRng) -> Vec<Line> {
     let mut trails: Vec<u32> = Vec::new();
     for _ in 0..text.len() {
-        trails.push(rng.gen_range(0..trail_length));
+        trails.push(rng.gen_range(1..trail_length));
     }
-    let w = width - std::cmp::min(text.len() as u32, width);
+    let w = width - std::cmp::min(text.len() as u32, width-1);
     let x: u32 = rng.gen_range(0..w);
     lines.push(Line {
         text,
@@ -87,7 +93,7 @@ fn draw(lines: &Vec<Line>, trails: &Vec<Vec<char>>, engine: &mut ConsoleEngine){
     }
 }
 
-fn main() {
+fn main() -> io::Result<()> {
     let mut rng = rand::thread_rng();
     //let char_distribution = Uniform::from((166 as char)..(217 as char));
     let char_distribution = Uniform::from((0x21 as char)..(0x7e as char));
@@ -131,12 +137,43 @@ fn main() {
 
     lines = add_line(lines, String::from("big chongus"), width, 16, &mut rng);
 
+    let (tx_stdin, rx_stdin): (Sender<String>, Receiver<String>) = mpsc::channel();
+
+    let _handle = thread::spawn(move || {
+        loop {
+            let mut input = String::new();
+            match io::stdin().read_line(&mut input) {
+                Ok(n) => {
+                    if n == 0 {
+                        // EOF reached
+                        break;
+                    }
+                    if n > 1 {
+                        // Remove newline character
+                        tx_stdin.send(input[..input.len()-1].to_string()).unwrap();
+                    }
+                },
+                Err(_) => ()
+            }
+        }
+    });
+
+    let timeout_duration = Duration::from_millis(1);
+
     loop {
         engine.wait_frame();
         engine.clear_screen();
 
         lines = update_lines(height, lines);
         trails = update_trails(trails, 0.05, &mut rng, &char_distribution);
+
+        match rx_stdin.recv_timeout(timeout_duration) {
+            Ok(input) => {
+                lines = add_line(lines, input, width, 16, &mut rng);
+            },
+            Err(_) => ()
+        }
+
         draw(&lines, &trails, &mut engine);
 
         if engine.is_key_pressed(KeyCode::Char('q')) || engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
@@ -145,4 +182,6 @@ fn main() {
 
         engine.draw();
     }
+
+    Ok(())
 }
