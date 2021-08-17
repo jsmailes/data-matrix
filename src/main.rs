@@ -42,6 +42,23 @@ fn update_trails(mut trails: Vec<Vec<char>>, chance: f64, rng: &mut ThreadRng, c
     trails
 }
 
+fn add_line(mut lines: Vec<Line>, text: String, width: u32, trail_length: u32, rng: &mut ThreadRng) -> Vec<Line> {
+    let mut trails: Vec<u32> = Vec::new();
+    for _ in 0..text.len() {
+        trails.push(rng.gen_range(0..trail_length));
+    }
+    let w = width - std::cmp::min(text.len() as u32, width);
+    let x: u32 = rng.gen_range(0..w);
+    lines.push(Line {
+        text,
+        trails,
+        x,
+        y: 0,
+    });
+
+    lines
+}
+
 // draw all lines and associated trails
 fn draw(lines: &Vec<Line>, trails: &Vec<Vec<char>>, engine: &mut ConsoleEngine){
     for line in lines {
@@ -111,6 +128,8 @@ fn main() {
 
     const FPS: u32 = 15;
     let mut engine = ConsoleEngine::init(width, height, FPS).unwrap();
+
+    lines = add_line(lines, String::from("big chongus"), width, 16, &mut rng);
 
     loop {
         engine.wait_frame();
