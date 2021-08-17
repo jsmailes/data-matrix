@@ -66,11 +66,11 @@ fn add_line(mut lines: Vec<Line>, text: String, width: u32, trail_length: u32, r
 }
 
 // draw all lines and associated trails
-fn draw(lines: &Vec<Line>, trails: &Vec<Vec<char>>, engine: &mut ConsoleEngine){
+fn draw(lines: &Vec<Line>, trails: &Vec<Vec<char>>, engine: &mut ConsoleEngine, line_color: Color, trail_color: Color){
     for line in lines {
         // draw main text
         let text = &line.text[..];
-        engine.print_fbg(line.x as i32, line.y as i32, text, Color::White, Color::Reset);
+        engine.print_fbg(line.x as i32, line.y as i32, text, line_color, Color::Reset);
 
         // draw trails
         let mut trail_buffer = [0; 4];
@@ -81,7 +81,7 @@ fn draw(lines: &Vec<Line>, trails: &Vec<Vec<char>>, engine: &mut ConsoleEngine){
                         match cs.get(line.y as usize - std::cmp::min(j as usize + 1, line.y as usize)) {
                             Some(c) => {
                                 let s = c.encode_utf8(&mut trail_buffer);
-                                engine.print_fbg(line.x as i32 + i as i32, line.y as i32 - j as i32 - 1, s, Color::Green, Color::Reset);
+                                engine.print_fbg(line.x as i32 + i as i32, line.y as i32 - j as i32 - 1, s, trail_color, Color::Reset);
                             },
                             None => ()
                         }
@@ -99,6 +99,7 @@ fn main() -> io::Result<()> {
     let char_distribution = Uniform::from((0x21 as char)..(0x7e as char));
 
     let mut lines: Vec<Line> = Vec::new();
+    let mut lines_bg: Vec<Line> = Vec::new();
 
     let width: u32;
     let height: u32;
@@ -145,6 +146,8 @@ fn main() -> io::Result<()> {
 
     let timeout_duration = Duration::from_millis(1);
 
+    let mut trail_buffer = [0; 4];
+
     loop {
         engine.wait_frame();
         engine.clear_screen();
@@ -159,7 +162,12 @@ fn main() -> io::Result<()> {
             Err(_) => ()
         }
 
-        draw(&lines, &trails, &mut engine);
+        lines_bg = update_lines(height, lines_bg);
+        let c = char_distribution.sample(&mut rng).encode_utf8(&mut trail_buffer);
+        lines_bg = add_line(lines_bg, c.to_string(), width, 16, &mut rng);
+
+        draw(&lines_bg, &trails, &mut engine, Color::Grey, Color::Grey);
+        draw(&lines, &trails, &mut engine, Color::White, Color::Green);
 
         if engine.is_key_pressed(KeyCode::Char('q')) || engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
             break;
