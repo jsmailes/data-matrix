@@ -8,4 +8,5 @@ edition = "2018"
 [dependencies]
 terminal_size = "0.1.17"
 console_engine = "2.0.1"
+clap = {version = "2.33.3", features = ["yaml"]}
 rand = "0.8.3"

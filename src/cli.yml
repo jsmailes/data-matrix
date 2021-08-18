@@ -1,0 +1,24 @@
+name: data-matrix
+version: "0.3"
+about: Display data from STDIN in a matrix-style cascade
+args:
+  - fps:
+      short: s
+      long: speed
+      help: Animation speed, in frames per second
+      takes_value: true
+  - num_inputs:
+      short: n
+      long: num_inputs
+      help: Maximum number of lines to process per frame
+      takes_value: true
+  - probability:
+      short: r
+      long: randomness
+      help: Randomness of trails
+      takes_value: true
+  - length:
+      short: t
+      long: trail
+      help: Maximum trail length
+      takes_value: true

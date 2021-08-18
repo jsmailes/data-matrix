@@ -1,3 +1,7 @@
+#[macro_use]
+extern crate clap;
+use clap::App;
+
 use terminal_size::{Width, Height, terminal_size};
 
 use console_engine::{ConsoleEngine, Color, KeyCode, KeyModifiers};
@@ -54,7 +58,7 @@ fn add_line(mut lines: Vec<Line>, text: String, width: u32, trail_length: u32, r
         trails.push(rng.gen_range(1..trail_length));
     }
     let w = width - std::cmp::min(text.len() as u32, width-1);
-    let x: u32 = rng.gen_range(0..w);
+    let x: u32 = rng.gen_range(0..=w);
     lines.push(Line {
         text,
         trails,
@@ -94,6 +98,33 @@ fn draw(lines: &Vec<Line>, trails: &Vec<Vec<char>>, engine: &mut ConsoleEngine, 
 }
 
 fn main() -> io::Result<()> {
+    // parse command line arguments
+    let yaml = load_yaml!("cli.yml");
+    let matches = App::from_yaml(yaml).get_matches();
+
+    let fps: u32 = match matches.value_of("fps") {
+        Some(s) => s.parse().expect("Speed must be an integer"),
+        None => 15,
+    };
+
+    let num_inputs: u32 = match matches.value_of("num_inputs") {
+        Some(s) => s.parse().expect("Num_inputs must be an integer"),
+        None => 1,
+    };
+
+    /*let probability: f64 = match matches.value_of("probability") {
+        Some(s) => s.parse().expect("Randomness must be an integer"),
+        None => 0.05,
+    };
+
+    let trail: u32 = match matches.value_of("length") {
+        Some(s) => s.parse().expect("Trail must be an integer"),
+        None => 16,
+    };*/
+    let probability: f64 = 0.05;
+    let trail: u32 = 16;
+
+
     let mut rng = rand::thread_rng();
     //let char_distribution = Uniform::from((166 as char)..(217 as char));
     let char_distribution = Uniform::from((0x21 as char)..(0x7e as char));
@@ -120,13 +151,18 @@ fn main() -> io::Result<()> {
         trails.push(ts);
     }
 
-    const FPS: u32 = 15;
-    let mut engine = ConsoleEngine::init(width, height, FPS).unwrap();
+    let mut engine = ConsoleEngine::init(width, height, fps).unwrap();
 
     let (tx_stdin, rx_stdin): (Sender<String>, Receiver<String>) = mpsc::channel();
+    let (tx_done, rx_done): (Sender<()>, Receiver<()>) = mpsc::channel();
 
     let _handle = thread::spawn(move || {
         loop {
+            match rx_done.recv_timeout(Duration::from_millis(1)) {
+                Ok(_) => { break; },
+                Err(_) => (),
+            }
+
             let mut input = String::new();
             match io::stdin().read_line(&mut input) {
                 Ok(n) => {
@@ -136,7 +172,9 @@ fn main() -> io::Result<()> {
                     }
                     if n > 1 {
                         // Remove newline character
-                        tx_stdin.send(input[..input.len()-1].to_string()).unwrap();
+                        match tx_stdin.send(input[..input.len()-1].to_string()) {
+                            _ => (),
+                        }
                     }
                 },
                 Err(_) => ()
@@ -153,25 +191,30 @@ fn main() -> io::Result<()> {
         engine.clear_screen();
 
         lines = update_lines(height, lines);
-        trails = update_trails(trails, 0.05, &mut rng, &char_distribution);
+        trails = update_trails(trails, probability, &mut rng, &char_distribution);
 
-        match rx_stdin.recv_timeout(timeout_duration) {
-            Ok(input) => {
-                lines = add_line(lines, input, width, 16, &mut rng);
-            },
-            Err(_) => ()
+        if engine.is_key_pressed(KeyCode::Esc) || engine.is_key_pressed(KeyCode::Char('q')) || engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
+            match tx_done.send(()) {
+                _ => (),
+            }
+            break;
+        }
+
+        for _ in 0..num_inputs {
+            match rx_stdin.recv_timeout(timeout_duration) {
+                Ok(input) => {
+                    lines = add_line(lines, input, width, trail, &mut rng);
+                },
+                Err(_) => ()
+            }
         }
 
         lines_bg = update_lines(height, lines_bg);
         let c = char_distribution.sample(&mut rng).encode_utf8(&mut trail_buffer);
-        lines_bg = add_line(lines_bg, c.to_string(), width, 16, &mut rng);
+        lines_bg = add_line(lines_bg, c.to_string(), width, trail, &mut rng);
 
         draw(&lines_bg, &trails, &mut engine, Color::Grey, Color::Grey);
         draw(&lines, &trails, &mut engine, Color::White, Color::Green);
-
-        if engine.is_key_pressed(KeyCode::Esc) || engine.is_key_pressed(KeyCode::Char('q')) || engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
-            break;
-        }
 
         engine.draw();
     }
