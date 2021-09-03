@@ -112,7 +112,7 @@ fn main() -> io::Result<()> {
         None => 1,
     };
 
-    /*let probability: f64 = match matches.value_of("probability") {
+    let probability: f64 = match matches.value_of("probability") {
         Some(s) => s.parse().expect("Randomness must be an integer"),
         None => 0.05,
     };
@@ -120,9 +120,10 @@ fn main() -> io::Result<()> {
     let trail: u32 = match matches.value_of("length") {
         Some(s) => s.parse().expect("Trail must be an integer"),
         None => 16,
-    };*/
-    let probability: f64 = 0.05;
-    let trail: u32 = 16;
+    };
+    if trail < 2 {
+        panic!("Trail length must be at least 2");
+    }
 
 
     let mut rng = rand::thread_rng();

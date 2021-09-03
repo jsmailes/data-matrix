@@ -6,7 +6,8 @@ Display data from STDIN in a matrix-style cascade!
 
 ### Binary
 
-Binaries are available from the releases page (TBD).
+Binaries are available from the [releases page](https://github.com/jsmailes/data-matrix/releases).
+Currently only tested on Fedora, testing on other systems welcome!
 
 ### Manual
 
@@ -18,9 +19,9 @@ git clone https://github.com/jsmailes/data-matrix.git
 cd data-matrix
 ```
 
-Install using cargo:
+Build and install using cargo:
 ```
-cargo install
+cargo install --path .
 ```
 
 ### Crate
