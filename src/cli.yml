@@ -1,5 +1,5 @@
 name: data-matrix
-version: "0.5.0"
+version: "0.5.1"
 about: Display data from STDIN in a matrix-style cascade
 args:
   - fps:
