@@ -2,6 +2,8 @@
 
 Display data from STDIN in a matrix-style cascade!
 
+https://user-images.githubusercontent.com/3045045/133606863-337d9017-8369-420d-b7d9-ca96b09c3860.mov
+
 ## Installation
 
 ### Binary
